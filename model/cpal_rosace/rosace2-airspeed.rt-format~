@@ -1,0 +1,10 @@
+-- See https://gforge.inria.fr/projects/rt-format
+-- NB: All durations are in picosecond(ps).
+Task{name="va_filter",	period=10000000000,	wcet=241769000,	offset=0, deadline=10000000000}
+Task{name="vz_filter",	period=10000000000,	wcet=252915000,	offset=0, deadline=10000000000}
+Task{name="altitude_holder",	period=20000000000,	wcet=164531000,	offset=0, deadline=20000000000}
+Task{name="q_filter",	period=10000000000,	wcet=218801000,	offset=0, deadline=10000000000}
+Task{name="az_filter",	period=10000000000,	wcet=371092000,	offset=0, deadline=10000000000}
+Task{name="h_filter",	period=10000000000,	wcet=303957000,	offset=0, deadline=10000000000}
+Task{name="vz_controller",	period=20000000000,	wcet=263957000,	offset=0, deadline=20000000000}
+Task{name="va_controller",	period=20000000000,	wcet=232967000,	offset=0, deadline=20000000000}

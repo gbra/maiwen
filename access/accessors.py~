@@ -1,0 +1,151 @@
+from abc import ABCMeta, abstractmethod
+import ocarina, lmp
+import os, inspect, sys
+from utils.utils import *
+from utils.termcolor import colored
+
+from data.data_structures import *
+from data.data_model import *
+
+class Accessors:
+    __metaclass__ = ABCMeta
+    _indentation=30
+    _color='blue'
+
+#    @abstractmethod
+#    def __init__(self):
+
+    def ListOfTasks(self):
+        raise NotImplementedError()
+
+class AADL(Accessors):	
+
+    def __init__(self):
+    	'''Test function'''
+	print colored( ' ' * self._indentation+"<b> Setting "+self.__class__.__name__+" accessors", self._color)
+	print colored(' ' * self._indentation+"**Running file: "+__file__, self._color)
+    		# print all registered backends
+#	print colored( "    **Checking backends"
+#   	for backends in Backends:
+#       		 print colored((backends);
+	if len(os.listdir("aadl_model"))>0:
+		i=0
+		display=''
+		model_list=[]
+		for m in os.listdir("aadl_model"):
+			i+=1
+			model_list.append(m)
+			display+='('+str(i)+') '+m+' ' 
+	else:
+		print ' ' * self._indentation+'No model is available for analysis... exit'
+		sys.exit()
+	choice = raw_input(' ' * self._indentation+'Available models are: '+display+'\r\n'+' ' * self._indentation+'Please choose a model (number): ');
+	directory='aadl_model/'+model_list[int(choice)-1]
+	print colored( ' ' * self._indentation+ "**Files directory: "+ directory, self._color) 
+    	#load aadl files
+	if len(os.listdir(directory))>0:
+	    	for element in os.listdir(directory):
+		    if not os.path.isdir(element) and  element.endswith('.aadl'):
+	   		err=ocarina.load(directory+'/'+element);                   # load a file
+	    		print ' ' * self._indentation+ 'Loading AADL file... ', err
+	else:
+		print ' ' * self._indentation+ 'Loading AADL file... No file model to load... exit ', err
+    	err=ocarina.analyze();                         # analyze models
+    	print ' ' * self._indentation+ 'Check AADL files... ', err
+	if err[0]==False:
+		print ' ' * self._indentation+'Error when checking file... exit'
+		sys.exit() 
+    	err=ocarina.instantiate("");           # instantiate system
+    	print ' ' * self._indentation+ 'Instantiate model... ', err
+
+	if err[3][0]=='Cannot instantiate AADL model\n\n':		
+		choice = raw_input(' ' * self._indentation+'Please select a root system among choices: ')
+		err=ocarina.instantiate(choice);           # instantiate system			
+
+	print colored( ' ' * self._indentation+"<e> Setting "+self.__class__.__name__+" accessors", self._color)	
+
+    def ListOfTasks(self):
+	print colored( ' ' * self._indentation+ "<b> AADL model access: getting '"+inspect.stack()[0][3]+"' ", self._color)
+	#local variables
+	_task_name=_period=_best_case_execution_time=_worst_case_execution_time=_deadline=_offset=_priority=_respTime=_blockingTime=None
+	_list_of_tasks=[]
+	#properties to get in the aadl instance model
+	properties=['period', 'priority', 'deadline', 'compute_execution_time', 'dispatch_offset']
+	property_value=None
+	#exploration of the AADL Instance Tree
+	aadlInstances=lmp.getInstances('thread')[0]
+    	print ' ' * self._indentation+ "**retrieving aadl instances ('threads')... found instances \t", aadlInstances
+        for task in aadlInstances :
+		#get the task name
+		_task_name=lmp.getInstanceName(task)
+#		print ' ' * self._indentation, _task_name
+		#get the task properties values
+		for prop in properties :
+			#if the property is accessible
+			if ocarina.getPropertyValueByName(task,prop)[0][1] !=  ' KO':
+				property_value=ocarina.getPropertyValueByName(task,prop)[0][1]	
+#				print colored( ' ' * self._indentation+ prop+'='+property_value, self._color)
+				#values processing and storage
+				for case in switch(prop):
+				    if case('period'):
+					_period=getValueFromAADLTime(property_value, 'ms')
+					break
+				    if case('deadline'):
+					_deadline=getValueFromAADLTime(property_value, 'ms')
+					break
+				    if case('compute_execution_time'):
+					_best_case_execution_time=getValueFromAADLTime(getAADLTimeFromAADLTimeRange(property_value, 'lower'), 'ms')
+					_worst_case_execution_time=getValueFromAADLTime(getAADLTimeFromAADLTimeRange(property_value, 'upper'), 'ms')
+					break
+				    if case('dispatch_offset'):
+					_offset=getTimeFromAADLString(property_value, 'ms')
+					break
+				    if case('priority'):
+					_priority=property_value
+					break
+				    if case(): # default, could also just omit condition or 'if True'
+					print colored( ' ' * self._indentation+ "error: switch case is not covered", self._color)
+#			else: 
+#				print colored(  ' ' * self._indentation+ prop+' not found in the model!', self._color)		
+		_list_of_tasks.append(Task(_task_name,_period,_best_case_execution_time,_worst_case_execution_time,_deadline,_offset,_priority,_respTime,_blockingTime))	
+	print colored( ' ' * self._indentation+ "<e> AADL model access", 'blue')
+	return _list_of_tasks
+
+    def ListOfProcessors(self):
+	print colored( ' ' * self._indentation+ "--> AADL model access: getting '"+inspect.stack()[0][3]+"' ", self._color)
+	_p1=Processor("p1")
+	_list_of_processors=[_p1]	
+	return _list_of_processors
+
+    def TasksDependencies(self):
+	print colored( ' ' * self._indentation+ "--> AADL model access: getting '"+inspect.stack()[0][3]+"' ", self._color)
+
+	_dependency_graph={"T1": [],
+		 "T2": [],
+		 "T3": [],	
+	}	
+
+	"""#exploration of the AADL Instance Tree
+	aadl_processes=lmp.getInstances('process')[0]
+	subcomponents=None
+	connected_components=None
+
+	for p in aadl_processes:
+		print ' ' * self._indentation,'Visiting ',lmp.getInstanceName(p)[0]
+		subcomponents=ocarina.AIN.Subcomponents(p)[0];
+   		print ' ' * self._indentation+ "**retrieving subcomponents... found instances \t", subcomponents
+		connected_components=ocarina.AIN.Connections(p)[0];
+    		print ' ' * self._indentation+ "**retrieving connections... found instances \t", connected_components
+
+	for c in connected_components:
+		#retrieve connected instances
+		print 'Instance: ', c, ' is ', lmp.getInstanceName(c)[0]
+		print 'Instance: ', c, ' is ', ocarina.AIN.Corresponding_Instance('311')[0]
+		print 'Instance: ', c, ' is ', lmp.getInstances(c)[0]"""
+
+	"""_dependency_graph={"T1": ["T2", "T3"],
+		 "T2": ["T1", "T3"],
+		 "T3": ["T1", "T2"],	
+	}"""
+
+	return _dependency_graph

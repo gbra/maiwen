@@ -1,0 +1,24 @@
+import os, sys
+import math
+from utils.termcolor import colored
+
+from meta_analysis import Analysis
+from data.data_structures import *
+		
+class cheddar_simu(Analysis):
+
+   def __init__(self):
+	print  colored(' ' * self._indentation+"--> Setting of the analysis : Cheddar-Simu", self._color)
+
+   def analysis(self, load_model):
+	print  colored(' ' * self._indentation+"--> Analysis execution : Simulation with Cheddar tool", self._color)
+	print  colored(' ' * self._indentation+"    **Executing OCARINA...", self._color)
+
+	cmd="ocarina -aadlv2 -g mast -r"
+	instance="rma.impl"
+	path=os.getcwd()+"/"
+	to_exec_file=""
+	for f in load_model :
+		to_exec_file+=path+f+" "
+	os.system(cmd+" "+instance+" " +to_exec_file)	
+	os.system("mast_analysis classic_rm mast-model.txt")

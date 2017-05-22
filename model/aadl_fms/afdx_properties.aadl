@@ -1,0 +1,23 @@
+property set AFDX_Properties is
+
+   AFDX_Es_Delay : Time applies to (device, system);
+   AFDX_Sw_Delay : Time applies to (device, system);
+   
+--   AFDX_Data_Flow_Spec: type record (
+--   		Frame_Size: Size_Range;
+--		Bandwidth_Allocation_Gap: Time;
+--		Tx_Jitter : Time;
+--	);
+   
+--	AFDX_Data_Flow: AFDX_Properties::AFDX_Data_Flow_Spec applies to (virtual bus);
+	
+	AFDX_Frame_Size: Size_Range applies to (virtual bus);
+	AFDX_Bandwidth_Allocation_Gap: Time applies to (virtual bus);
+	AFDX_Tx_Jitter : Time applies to (virtual bus);
+	
+	AFDX_Std_Frame_Size: constant Size_Range => 84 Bytes .. 1538 Bytes;
+	AFDX_Std_Es_Delay: constant Time => 150 us;
+	AFDX_Std_Tx_Jitter: constant Time => 500 ms;	
+	AFDX_Std_Sw_Delay: constant Time => 100 us;
+	AFDX_Std_Bandwidth: constant Data_Volume => 100000 bitsps;
+end AFDX_Properties;

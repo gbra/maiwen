@@ -1,0 +1,37 @@
+
+   def __mono_processor(self, processors_list):
+	if len(processors_list) != 1 : return False
+	return True
+
+   def __periodic_tasks(self, tasks_list):
+    	for task in tasks_list:
+		if type(task.period) != int and type(task.period) != float:
+            		return False
+  	return True 	
+
+   def __no_offsets(self, tasks_list):
+    	for task in tasks_list:
+		if task.offset >= 0:
+            		return False
+		if task.offset >= 0.0:
+            		return False
+  	return True
+
+   def __implicit_deadlines(self, tasks_list):
+    	for task in tasks_list:
+		if task.deadline != None and task.deadline != task.period:
+            		return False
+  	return True
+
+   def __fixed_computation_times(self, tasks_list):
+    	for task in tasks_list:
+		if task.worst_case_execution_time != None and task.worst_case_execution_time > task.period:
+            		return False
+  	return True
+
+   def __independent_tasks(self, dependency_graph):
+	for task in dependency_graph:
+		dependent_tasks=dependency_graph[task] 
+		if len(dependent_tasks) > 0: 
+			return False
+	return True

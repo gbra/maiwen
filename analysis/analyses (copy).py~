@@ -1,0 +1,646 @@
+import os, sys
+import math
+from utils.termcolor import colored
+
+from analysis import Analysis
+
+from data.data_structures import *
+
+class ll_rm_test(Analysis): # define an analysis  
+
+   def __init__(self):
+	print  colored(' ' * self._indentation+"<b> Setting of the analysis : "+self.__class__.__name__, self._color)
+	print colored(' ' * self._indentation+"**Running file: "+__file__, self._color)
+	print  colored(' ' * self._indentation+"<e> Setting of the analysis : "+self.__class__.__name__, self._color)
+
+   def analysis(self, model):
+	print  colored(' ' * self._indentation+"<b> Analysis execution : "+self.__class__.__name__, self._color)
+
+	#input data structures (model access)
+	tasks_list=model.get("LIST_OF_TASKS")
+	processors_list=model.get("LIST_OF_PROCESSORS")
+	dependency_graph=model.get("TASKS_DEPENDENCIES")
+
+	print  colored(' ' * self._indentation+"Check preconditions for LL-test...", self._color)
+
+	try:
+		#check analysis preconditions
+		assert (self.__mono_processor(processors_list)),"multiprocessors architecture"
+		assert (self.__periodic_tasks(tasks_list)),"tasks are not periodic"
+		assert (self.__no_offsets(tasks_list)),"tasks have offsets"
+		assert (self.__implicit_deadlines(tasks_list)),"tasks have explicit deadlines"
+		assert (self.__fixed_computation_times(tasks_list)),"tasks have not fixed computation times"
+		assert (self.__independent_tasks(dependency_graph)),"tasks are dependent"
+
+		print  colored(' ' * self._indentation+"OK", self._color)
+	
+		#execute main test
+		Sched=self.__ll_rm_test(tasks_list)
+
+		#output data structure (model update)
+		tasks_meta=model.get("TASKS_META")
+		setattr(tasks_meta, 'isSched (RMA)', Sched)
+		model.update("TASKS_META", tasks_meta)
+		model.display("TASKS_META")
+
+	except AssertionError as e:
+	    print  ' ' * self._indentation,'precondition failed ', e.args
+
+	print  colored(' ' * self._indentation+"<e> Analysis execution : "+self.__class__.__name__, self._color)
+
+   def __mono_processor(self, processors_list):
+	if len(processors_list) != 1 : return False
+	return True
+
+   def __periodic_tasks(self, tasks_list):
+    	for task in tasks_list:
+		if type(task.period) != int and type(task.period) != float:
+            		return False
+  	return True 	
+
+   def __no_offsets(self, tasks_list):
+    	for task in tasks_list:
+		if task.offset >= 0:
+            		return False
+		if task.offset >= 0.0:
+            		return False
+  	return True
+
+   def __implicit_deadlines(self, tasks_list):
+    	for task in tasks_list:
+		if task.deadline != None and task.deadline != task.period:
+            		return False
+  	return True
+
+   def __fixed_computation_times(self, tasks_list):
+    	for task in tasks_list:
+		if task.worst_case_execution_time != None and task.worst_case_execution_time > task.period:
+            		return False
+  	return True
+
+   def __independent_tasks(self, dependency_graph):
+	for task in dependency_graph:
+		dependent_tasks=dependency_graph[task] 
+		if len(dependent_tasks) > 0: 
+			return False
+	return True
+
+   def __ll_rm_test(self, tasks_list):
+	print  colored(' ' * self._indentation+"Execute LL test...", self._color)
+
+	#analysis implementation
+  	_utilization_factor=0.0     	
+	for task in tasks_list: 
+		_utilization_factor=_utilization_factor+task.worst_case_execution_time/task.period
+	_tasks_nbr=float(len(tasks_list))	
+	_test_bound=_tasks_nbr*(2.0**(1.0/_tasks_nbr)-1.0)  
+    	if _utilization_factor<=_test_bound:
+ 		print  colored(' ' * self._indentation+"LL-test is satisfied, U is "+ str(_utilization_factor) +" <= "+ str(_test_bound) +" -> the tasks set is schedulable!", self._color)
+		_Sched="OK"		
+	else:
+		print  colored(' ' * self._indentation+"LL-test is not satisfied, U is "+ str(_utilization_factor) +" > "+ str(_test_bound) +" -> unable to conclude about the tasks set!", self._color)		
+		_Sched="NOK (NAP)"
+
+	return _Sched
+
+class srl_rm_test(Analysis): # define an analysis  
+
+   def __init__(self):
+	print  colored(' ' * self._indentation+"<b> Setting of the analysis : "+self.__class__.__name__, self._color)
+	print colored(' ' * self._indentation+"**Running file: "+__file__, self._color)
+	print  colored(' ' * self._indentation+"<e> Setting of the analysis : "+self.__class__.__name__, self._color)
+
+   def analysis(self, model):
+	print  colored(' ' * self._indentation+"<b> Analysis execution : "+self.__class__.__name__, self._color)
+
+	#input data structures (model access)
+	tasks_list=model.get("LIST_OF_TASKS")
+#	processors_list=model.get("LIST_OF_PROCESSORS")
+#	dependency_graph=model.get("TASKS_DEPENDENCIES")
+
+	print  colored(' ' * self._indentation+"Check preconditions for SRL-test...", self._color)
+
+	try:
+		#check analysis preconditions
+		#assert (self.__mono_processor(processors_list)),"multiprocessors architecture"
+		#assert (self.__periodic_tasks(tasks_list)),"tasks are not periodic"
+		#assert (self.__no_offsets(tasks_list)),"tasks have offsets"
+		#assert (self.__implicit_deadlines(tasks_list)),"tasks have explicit deadlines"
+		#assert (self.__fixed_computation_times(tasks_list)),"tasks have not fixed computation times"
+		#assert (self.__independent_tasks(dependency_graph)),"tasks are dependent"
+
+		print  colored(' ' * self._indentation+"OK", self._color)
+	
+		#execute main test
+		Sched=self.__srl_rm_test(tasks_list)
+
+		#output data structure (model update)
+		#tasks_meta=model.get("TASKS_META")
+		#setattr(tasks_meta, 'isSched (RMA)', Sched)
+		#model.update("TASKS_META", tasks_meta)
+		#model.display("TASKS_META")
+
+	except AssertionError as e:
+	    print  ' ' * self._indentation,'precondition failed ', e.args
+
+	print  colored(' ' * self._indentation+"<e> Analysis execution : "+self.__class__.__name__, self._color)
+
+   def __mono_processor(self, processors_list):
+	if len(processors_list) != 1 : return False
+	return True
+
+   def __periodic_tasks(self, tasks_list):
+    	for task in tasks_list:
+		if type(task.period) != int and type(task.period) != float:
+            		return False
+  	return True 	
+
+   def __no_offsets(self, tasks_list):
+    	for task in tasks_list:
+		if task.offset >= 0:
+            		return False
+		if task.offset >= 0.0:
+            		return False
+  	return True
+
+   def __implicit_deadlines(self, tasks_list):
+    	for task in tasks_list:
+		if task.deadline != None and task.deadline != task.period:
+            		return False
+  	return True
+
+   def __fixed_computation_times(self, tasks_list):
+    	for task in tasks_list:
+		if task.worst_case_execution_time != None and task.worst_case_execution_time > task.period:
+            		return False
+  	return True
+
+   def __independent_tasks(self, dependency_graph):
+	for task in dependency_graph:
+		dependent_tasks=dependency_graph[task] 
+		if len(dependent_tasks) > 0: 
+			return False
+	return True
+
+   def __srl_rm_test(self, tasks_list):
+	print  colored(' ' * self._indentation+"Execute SRL test...", self._color)
+
+	err=0	
+	ab=0
+	res=None
+
+	#analysis implementation   	
+	for i in range(0, len(tasks_list)):
+		task_i=tasks_list[i]
+		print ' ' * self._indentation, "i: ", i, "(considered task is print %s)" %task_i.name 
+		result_k=[]
+		for k in range(0, i+1):
+			result_j=0.0
+			task_k=tasks_list[k]
+			print ' ' * self._indentation, "     -> k: ", k, "(considered task is print %s)" %task_k.name
+			l=math.floor(task_i.period/task_k.period)
+			print ' ' * self._indentation, "     -> calculated l is: ", task_i.period, "/", task_k.period, "=", l 
+
+			if l!=0.0:
+				for j in range(0, i+1):
+					task_j=tasks_list[j]
+					print ' ' * self._indentation, "          -> j: ", j, "(considered task is print %s)" %task_j.name
+					u=task_j.worst_case_execution_time/task_j.period
+					result0=u*(task_j.period/(l*task_k.period))
+					print ' ' * self._indentation, "          -> calculated result (0) is: ", result0
+					result0bis=(math.ceil(l*task_k.period/task_j.period))
+					print ' ' * self._indentation, "          -> calculated result (0bis) is: ", result0bis
+					result1=result0*result0bis
+					print ' ' * self._indentation, "          -> calculated result (1) is: ", result1
+					result_j+=result1
+				print  ' ' * self._indentation, "          -> result=", result_j  
+				result_k.append(result_j)
+
+			else:
+ 				print "Error: Float division by zero... Skip operation"
+				err+=1
+
+			print ' ' * self._indentation, "     -> min value in k is: ", min(result_k) 	
+		
+		if min(result_k)>1:
+			print ' ' * self._indentation, "SRL-test aborded -> min value at iteration i=%d k=%d is %f > 1.0" % (i, k, min(result_k)) 	
+			ab+=1
+#			return False
+	
+	print ' ' * self._indentation, "Number of errors: %d - number of abortions", ab
+
+	if ab==0:
+		print ' ' * self._indentation, "SRL-test completed: the system is schedulable"
+		res=True
+	else: 
+		print ' ' * self._indentation, "SRL-test aborded: the system is not schedulable"
+		res=False
+	return res
+
+
+class srl_pcp_test1(Analysis): # define an analysis  
+
+   def __init__(self):
+	print  colored(' ' * self._indentation+"<b> Setting of the analysis : "+self.__class__.__name__, self._color)
+	print colored(' ' * self._indentation+"**Running file: "+__file__, self._color)
+	print  colored(' ' * self._indentation+"<e> Setting of the analysis : "+self.__class__.__name__, self._color)
+
+   def analysis(self, model):
+	print  colored(' ' * self._indentation+"<b> Analysis execution : "+self.__class__.__name__, self._color)
+
+	#input data structures (model access)
+	tasks_list=model.get("LIST_OF_TASKS")
+#	tasks_list=[Task("t1",100.0,40.0,40.0,None,None,None,None,20), Task("t2",150.0,40.0,40.0,None,None,None,None,30.0), Task("t3",350.0,100.0,100.0,None,None,None,None,0.0)]
+#	processors_list=model.get("LIST_OF_PROCESSORS")
+#	dependency_graph=model.get("TASKS_DEPENDENCIES")
+
+	print  colored(' ' * self._indentation+"Check preconditions for PCP-test...", self._color)
+
+	try:
+		#check analysis preconditions
+		#assert (self.__mono_processor(processors_list)),"multiprocessors architecture"
+		#assert (self.__periodic_tasks(tasks_list)),"tasks are not periodic"
+		#assert (self.__no_offsets(tasks_list)),"tasks have offsets"
+		#assert (self.__implicit_deadlines(tasks_list)),"tasks have explicit deadlines"
+		#assert (self.__fixed_computation_times(tasks_list)),"tasks have not fixed computation times"
+		#assert (self.__independent_tasks(dependency_graph)),"tasks are dependent"
+
+		print  colored(' ' * self._indentation+"OK", self._color)
+	
+		#execute main test
+		Sched=self.__srl_pcp_test_corollary17(tasks_list)
+		Sched=self.__srl_pcp_test_theorem16(tasks_list)
+
+		#output data structure (model update)
+		#tasks_meta=model.get("TASKS_META")
+		#setattr(tasks_meta, 'isSched (RMA)', Sched)
+		#model.update("TASKS_META", tasks_meta)
+		#model.display("TASKS_META")
+
+	except AssertionError as e:
+	    print  ' ' * self._indentation,'precondition failed ', e.args
+
+	print  colored(' ' * self._indentation+"<e> Analysis execution : "+self.__class__.__name__, self._color)
+
+   def __mono_processor(self, processors_list):
+	if len(processors_list) != 1 : return False
+	return True
+
+   def __periodic_tasks(self, tasks_list):
+    	for task in tasks_list:
+		if type(task.period) != int and type(task.period) != float:
+            		return False
+  	return True 	
+
+   def __no_offsets(self, tasks_list):
+    	for task in tasks_list:
+		if task.offset >= 0:
+            		return False
+		if task.offset >= 0.0:
+            		return False
+  	return True
+
+   def __implicit_deadlines(self, tasks_list):
+    	for task in tasks_list:
+		if task.deadline != None and task.deadline != task.period:
+            		return False
+  	return True
+
+   def __fixed_computation_times(self, tasks_list):
+    	for task in tasks_list:
+		if task.worst_case_execution_time != None and task.worst_case_execution_time > task.period:
+            		return False
+  	return True
+
+   def __independent_tasks(self, dependency_graph):
+	for task in dependency_graph:
+		dependent_tasks=dependency_graph[task] 
+		if len(dependent_tasks) > 0: 
+			return False
+	return True
+
+   def __srl_pcp_test_theorem16(self, tasks_list):
+	print  colored(' ' * self._indentation+"Execute SRL-PCP-test (theorem16)...", self._color)
+	
+	#analysis implementation
+  	utilization_factor=0.0
+	res=None
+     	blockingTime_factor=[]
+	test_bound=float(len(tasks_list))*(2.0**(1.0/float(len(tasks_list)))-1.0) 
+	
+	for task in tasks_list: 
+		utilization_factor+=task.worst_case_execution_time/task.period
+		blockingTime_factor.append(task.blockingTime/task.period)	
+ 
+	print "max blocikng time factor=", max(blockingTime_factor)
+
+    	if utilization_factor+max(blockingTime_factor)<=test_bound:
+ 		print  colored(' ' * self._indentation+"SRL-PCP-test is satisfied, U=%f <= %f -> the tasks set is schedulable!" %((utilization_factor+max(blockingTime_factor)), test_bound), self._color)
+		res=True		
+	else:
+		print  colored(' ' * self._indentation+"SRL-PCP-test is not satisfied, , U=%f > %f -> unable to conclude about the tasks set!" %((utilization_factor+max(blockingTime_factor)), test_bound), self._color)		
+		res=False
+	return res
+
+   def __srl_pcp_test_corollary17(self, tasks_list):
+	print  colored(' ' * self._indentation+"Execute SRL-PCP-test (corollary17)...", self._color)
+	
+	#analysis implementation
+	res=None
+	ab=0
+
+	#test completion
+	for i in range(0, len(tasks_list)):
+		task_i=tasks_list[i]
+  		utilization_factor=(task_i.worst_case_execution_time+task_i.blockingTime)/task_i.period
+
+		for k in range(0, i):
+			task_k=tasks_list[k]
+			utilization_factor+=task_k.worst_case_execution_time/task_k.period
+
+		test_bound=float(i+1)*(2.0**(1.0/float(i+1))-1.0) 
+	    	if utilization_factor<=test_bound:
+	 		print  colored(' ' * self._indentation+"SRL-PCP-test is satisfied for task %s, U=%f <= %f -> the tasks set is schedulable!" %(task_i.name, utilization_factor, test_bound), self._color)
+		else:
+			print  colored(' ' * self._indentation+"SRL-PCP-test is not satisfied task %s, , U=%f > %f -> unable to conclude about the tasks set!" %(task_i.name, utilization_factor, test_bound), self._color)		
+			ab+=1
+
+	#when test is completed
+	if ab==0:
+		print ' ' * self._indentation, "SRL-PCP-test (corollary17) successful -> the system is schedulable!"
+		res=True
+	else: 
+		print ' ' * self._indentation, "SRL-PCP-test (corollary17) failed %d times -> unable to conclude about the tasks set!" %ab
+		res=False
+	return res
+
+	return res
+
+class srl_pcp_test2(Analysis): # define an analysis  
+
+   def __init__(self):
+	print  colored(' ' * self._indentation+"<b> Setting of the analysis : "+self.__class__.__name__, self._color)
+	print colored(' ' * self._indentation+"**Running file: "+__file__, self._color)
+	print  colored(' ' * self._indentation+"<e> Setting of the analysis : "+self.__class__.__name__, self._color)
+
+   def analysis(self, model):
+	print  colored(' ' * self._indentation+"<b> Analysis execution : "+self.__class__.__name__, self._color)
+
+	#input data structures (model access)
+	tasks_list=model.get("LIST_OF_TASKS")
+#	tasks_list=[Task("t1",100.0,40.0,40.0,None,None,None,None,20), Task("t2",150.0,40.0,40.0,None,None,None,None,30.0), Task("t3",350.0,100.0,100.0,None,None,None,None,0.0)]
+#	processors_list=model.get("LIST_OF_PROCESSORS")
+#	dependency_graph=model.get("TASKS_DEPENDENCIES")
+
+	print  colored(' ' * self._indentation+"Check preconditions for PCP-test...", self._color)
+
+	try:
+		#check analysis preconditions
+		#assert (self.__mono_processor(processors_list)),"multiprocessors architecture"
+		#assert (self.__periodic_tasks(tasks_list)),"tasks are not periodic"
+		#assert (self.__no_offsets(tasks_list)),"tasks have offsets"
+		#assert (self.__implicit_deadlines(tasks_list)),"tasks have explicit deadlines"
+		#assert (self.__fixed_computation_times(tasks_list)),"tasks have not fixed computation times"
+		#assert (self.__independent_tasks(dependency_graph)),"tasks are dependent"
+
+		print  colored(' ' * self._indentation+"OK", self._color)
+	
+		#execute main test
+		Sched=self.__srl_pcp_test(tasks_list)
+
+		#output data structure (model update)
+		#tasks_meta=model.get("TASKS_META")
+		#setattr(tasks_meta, 'isSched (RMA)', Sched)
+		#model.update("TASKS_META", tasks_meta)
+		#model.display("TASKS_META")
+
+	except AssertionError as e:
+	    print  ' ' * self._indentation,'precondition failed ', e.args
+
+	print  colored(' ' * self._indentation+"<e> Analysis execution : "+self.__class__.__name__, self._color)
+
+   def __mono_processor(self, processors_list):
+	if len(processors_list) != 1 : return False
+	return True
+
+   def __periodic_tasks(self, tasks_list):
+    	for task in tasks_list:
+		if type(task.period) != int and type(task.period) != float:
+            		return False
+  	return True 	
+
+   def __no_offsets(self, tasks_list):
+    	for task in tasks_list:
+		if task.offset >= 0:
+            		return False
+		if task.offset >= 0.0:
+            		return False
+  	return True
+
+   def __implicit_deadlines(self, tasks_list):
+    	for task in tasks_list:
+		if task.deadline != None and task.deadline != task.period:
+            		return False
+  	return True
+
+   def __fixed_computation_times(self, tasks_list):
+    	for task in tasks_list:
+		if task.worst_case_execution_time != None and task.worst_case_execution_time > task.period:
+            		return False
+  	return True
+
+   def __independent_tasks(self, dependency_graph):
+	for task in dependency_graph:
+		dependent_tasks=dependency_graph[task] 
+		if len(dependent_tasks) > 0: 
+			return False
+	return True
+
+   def __srl_pcp_test(self, tasks_list):
+	print  colored(' ' * self._indentation+"Execute SRL-PCP test (theorem18)...", self._color)
+	
+	err=0
+	ab=0
+	res=None
+
+	#analysis implementation  	
+	for i in range(0, len(tasks_list)):
+		task_i=tasks_list[i]
+		print ' ' * self._indentation, "i: ", i, "(considered task is print %s)" %task_i.name 
+		result_k=[]
+		for k in range(0, i+1):
+			result_j=0.0
+			task_k=tasks_list[k]
+			print ' ' * self._indentation, "     -> k: ", k, "(considered task is print %s)" %task_k.name
+			l=math.floor(task_i.period/task_k.period)
+			print ' ' * self._indentation, "     -> calculated l is: ", task_i.period, "/", task_k.period, "=", l 
+			if l!=0.0:
+				for j in range(0, i):
+					task_j=tasks_list[j]
+					print ' ' * self._indentation, "          -> j: ", j, "(considered task is print %s)" %task_j.name
+					u=task_j.worst_case_execution_time/task_j.period
+					result0=u*(task_j.period/(l*task_k.period))
+					print ' ' * self._indentation, "          -> calculated result (0) is: ", result0
+					result0bis=(math.ceil(l*task_k.period/task_j.period))
+					print ' ' * self._indentation, "          -> calculated result (0bis) is: ", result0bis
+					result1=result0*result0bis
+					print ' ' * self._indentation, "          -> calculated result (1) is: ", result1
+					result2=((task_i.worst_case_execution_time+task_i.blockingTime)/(l*task_k.period))
+					print ' ' * self._indentation, "          -> calculated result (2) is: ", result2 
+					result_j+=result1+result2
+				print  ' ' * self._indentation, "          -> result=", result_j  
+				result_k.append(result_j)
+			else:
+ 				print "Error: Float division by zero... Skip operation"
+				err+=1
+
+			print ' ' * self._indentation, "     -> min value in k is: ", min(result_k) 	
+		
+		if min(result_k)>1:
+			print ' ' * self._indentation, "PCP-test not verified -> min value at iteration i=%d k=%d is %f > 1.0" % (i, k, min(result_k)) 
+			ab+=1
+
+	print ' ' * self._indentation, "Number of errors: %d - number of abortions %d" % (err, ab)
+
+	if ab==0:
+		print ' ' * self._indentation, "SRL-PCP test (theorem18) successful -> the system is schedulable!"
+		res=True
+	else: 
+		print ' ' * self._indentation, "SRL-PCP test (theorem18) failed %d times -> unable to conclude about the tasks set!" %ab
+		res=False
+	return res
+
+class RMA_Context_Analysis(Analysis): # define an analysis
+
+   list_of_tasks=[]   
+
+   def __init__(self):
+	print  colored(' ' * self._indentation,"--> Setting of the analysis : RMA context", self._color)
+
+   def analysis(self, model):
+	print  colored(' ' * self._indentation,"--> Analysis execution : RMA context", self._color)
+	#input: required data structure
+	self.list_of_tasks=model.get("LIST_OF_TASKS")
+	self.list_of_processors=model.get("LIST_OF_PROCESSORS")
+	self.tasks_dependency=model.get("TASKS_DEPENDENCIES")
+	#analysis implementation   	
+	_periodicTasks=True
+	_simultaneousTasks=True
+	_implicitDeadlineTasks=True
+	_independentTasks=True 
+	_fixedExecTasks=True
+	_uniProcessor=True
+	for task in self.list_of_tasks: 
+		if not (task.period != None) : _periodicTasks=_periodicTasks and False
+		if not (task.offset == None or task.offset == 0.0) : _simultaneousTasks= _simultaneousTasks and False
+		if not (task.deadline == None or task.deadline == task.period) : _implicitDeadlineTasks=_implicitDeadlineTasks and False 
+#		if () : _fixedPrioTasks=_fixedPrioTasks and False
+		if not (task.execution_time != None and task.execution_time <= task.period) : _fixedExecTasks=_fixedExecTasks and False
+	if not (len(self.list_of_processors) == 1) : _uniProcessor=_uniProcessor and False
+	if not (self.tasks_dependency == None) : _independentTasks=_independentTasks and False
+#	_nonSelfSuspendTasks=None
+#	_preemptibleTasks=None
+	#output: provided data structure
+	self.tasks_meta=model.get("TASKS_META")
+	setattr(self.tasks_meta, 'periodicTasks', _periodicTasks)
+	setattr(self.tasks_meta, 'simultaneousTasks', _simultaneousTasks)
+	setattr(self.tasks_meta, 'implicitDeadlineTasks', _implicitDeadlineTasks)
+	setattr(self.tasks_meta, 'fixedPrioTasks', _fixedExecTasks)
+	setattr(self.tasks_meta, 'uniProcessor', _uniProcessor)
+	model.update(Data_Struct("TASKS_META", self.tasks_meta))
+	model.display("TASKS_META")
+
+class RMA(Analysis): # define an analysis
+
+   list_of_tasks=[]   
+
+   def __init__(self):
+	print  colored(' ' * self._indentation+"<b> Setting of the analysis : "+self.__class__.__name__, self._color)
+	print colored(' ' * self._indentation+"**Running file: "+__file__, self._color)
+	print  colored(' ' * self._indentation+"<e> Setting of the analysis : "+self.__class__.__name__, self._color)
+
+   def analysis(self, model):
+	print  colored(' ' * self._indentation+"<b> Analysis execution : RMA", self._color)
+
+	#input: required data structure
+	self.list_of_tasks=model.get("LIST_OF_TASKS")
+	model.display_nbr("LIST_OF_TASKS")
+	#analysis implementation
+  	_utilization_factor=0.0     	
+	for task in self.list_of_tasks: 
+		_utilization_factor=_utilization_factor+task.worst_case_execution_time/task.period
+	_tasks_nbr=float(len(self.list_of_tasks))	
+	_test_bound=_tasks_nbr*(2.0**(1.0/_tasks_nbr)-1.0)  
+    	if _utilization_factor<=_test_bound:
+ 		print  colored(' ' * self._indentation+"**RMA : test is satisfied : U="+ str(_utilization_factor) +" <= "+ str(_test_bound) +" -> the tasks set is schedulable!", self._color)
+		_Sched="OK"		
+	else:
+		print  colored(' ' * self._indentation+"**RMA : test is not satisfied : "+ str(_utilization_factor) +" > "+ str(_test_bound) +"-> unable to conclude about the tasks set!", self._color)		
+		_Sched="NOK (NAP)"
+	#output: provided data structure
+	self.tasks_meta=model.get("TASKS_META")
+	setattr(self.tasks_meta, 'isSched (RMA)', _Sched)
+	model.update(Data_Struct("TASKS_META", self.tasks_meta))
+	model.display("TASKS_META")
+	print  colored(' ' * self._indentation+"<e> Analysis execution : RMA", self._color)
+
+class RTA(Analysis): # define an analysis
+
+   list_of_tasks=[]   
+
+   def __init__(self):
+	print  colored(' ' * self._indentation,"--> Setting of the analysis : RTA", self._color)
+
+   def analysis(self, model):
+	print  colored(' ' * self._indentation,"--> Analysis execution : RTA", self._color)
+	self.list_of_tasks=model.get("LIST_OF_TASKS")
+	_i=3.0
+	for task in self.list_of_tasks: 
+		setattr(task, 'respTime', _i)
+		_i+=1
+		 
+	model.update(Data_Struct("LIST_OF_TASKS", self.list_of_tasks))	
+	model.display("LIST_OF_TASKS")
+
+class RTA_post(Analysis): # define an analysis
+
+   list_of_tasks=[]   
+
+   def __init__(self):
+	print  colored(' ' * self._indentation,"--> Setting of the analysis : RTA post", self._color)
+
+   def analysis(self,model):
+	print  colored(' ' * self._indentation,"--> Analysis execution : RTA_post", self._color)
+	self.list_of_tasks=model.get("LIST_OF_TASKS")
+	_is_Sched="OK"     
+	_out_of_bound=[]	
+	for task in self.list_of_tasks:
+		if task.deadline==None:	
+			task.deadline=task.period	 
+		if task.respTime > task.deadline:
+#			print  ' ' * self._indentation,"respTime="+str(task.respTime)+" > deadline="+str(task.deadline)	
+			_is_Sched="NOK"
+			_out_of_bound.append(task.name)
+#	model.update(Data_Struct("SCHEDULABILITY_RTA", [Schedulability(_is_Sched, _out_of_bound)]))
+	self.tasks_meta=model.get("TASKS_META")
+	setattr(self.tasks_meta, 'isSched (RTA_post)', _is_Sched)
+	model.update(Data_Struct("TASKS_META", self.tasks_meta))
+	model.display("TASKS_META")
+		
+class RMA_MAST(Analysis):
+
+   def __init__(self):
+	print  colored(' ' * self._indentation,"--> Setting of the analysis : RTA post", self._color)
+
+   def analysis(self,model):
+	print  colored(' ' * self._indentation, "--> Analysis execution : RMA with MAST tool", self._color)
+	print  colored(' ' * self._indentation,"    **Executing OCARINA...", self._color)
+	cmd="ocarina -aadlv2 -g mast -r"
+	instance="rma.impl"
+	path=os.getcwd()+"/"
+	list_of_files=["processor_properties.aadl", "processors.aadl", "deployment.aadl", "rma.aadl"]
+	to_exec_file=""
+	for f in list_of_files :
+		to_exec_file+=path+f+" "
+	os.system(cmd+" "+instance+" " +to_exec_file)	
+	os.system("mast_analysis classic_rm mast-model.txt")

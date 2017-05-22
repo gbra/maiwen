@@ -1,0 +1,133 @@
+package paparazzi_system
+public
+
+-- Papabench is a free benchmark describing the architecture of an unmanned aircraft vehicle called Paparazzi 
+-- AADL models originate from documentation and original C Code freely available under the GNU-GPL 
+-- Initial models from papabench v0.4 contributed by F.Nemer, H.Cassé (IRIT)
+-- Integration to AADLib (review/correction of models, adaptation to AADLv2 and extension) by G.Brau (Univ. Luxembourg/ISAE)
+
+-- This case study illustrates iterative definition and validation of real-time workloads (tasks an interruptions) 
+-- with four implementations from simplest to most realistic:
+--			1. paparazzi.archi_basic
+--			2. paparazzi.PnP_tasks_interruptions
+--			3. paparazzi.PP_tasks_interruptions
+--			4. paparazzi.PP_tasks_AP_interruptions
+
+with paparazzi_hard;
+with flyByWire_subsys;
+with autopilot_subsys;
+with Papa_Types;
+
+system paparazzi
+	features
+	RC_EvtData_Input : in event data port Papa_Types::Unknown;
+end paparazzi;
+
+-- Basic architecture definition 
+-- We only model the airborne system. Consists of: 
+-- 1. Control Board with dual micro-controllers 
+-- 2. Servos
+-- 3. Motor controllers
+-- 4. a variety of sensors (example: infrared and GPS)
+-- 5. R/C receiver
+-- 6. data link radio modem
+-- 7. batteries
+-- 8. payloads (example: camera and video transmitter) 
+
+system implementation paparazzi.archi_basic
+	subcomponents
+	fly_by_wire : system flyByWire_subsys::MCU1.Impl;
+	autopilot : system autopilot_subsys::MCU0.Impl;
+	SPI_Bus : bus paparazzi_hard::SPI;
+	connections
+	-- bus accesses
+	acc1: bus access SPI_Bus->autopilot.SPI_Con;
+	acc2: bus access SPI_Bus->fly_by_wire.SPI_Con;
+	
+	-- connections
+	c1: port RC_EvtData_Input->fly_by_wire.RC_EvtData_Input;
+	c2: port fly_by_wire.D_MCU1_Output->autopilot.D_MCU1_Input;
+	c3: port autopilot.D_MCU0_Output->fly_by_wire.AP_EvtData_Input;
+
+end paparazzi.archi_basic;
+
+-- First task set definition (extends and refines basic architecture)
+-- We consider periodic non preemptive (PnP) tasks and interruptions
+
+system implementation paparazzi.PnP_tasks_interruptions extends paparazzi.archi_basic 
+	properties
+	-- non preemptive scheduling
+	Preemptive_Scheduler => false applies to autopilot.Proc_0;
+	Preemptive_Scheduler => false applies to fly_by_wire.MCU1_P;
+	-- RM scheduling (RMS) is defined in processors implementations (autopilot_hard and flyByWire_hard packages)
+	-- periodic tasks
+		-- for autopilot
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Data_Acq_Filt_Th;
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Alt_Ctrl_Th;
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Nav_Th;
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Climb_Ctrl_Th;
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Stab_Th;
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Send_MCU1_Th;
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Send_Grd_Station_Th;
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Ctrl_By_RC_Th;
+    	-- for fly-by-wire
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Rec_Dec_Th;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Send_Th;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Pilot_Serv_Th;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Check_Ap_Th;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Check_Fail_Th;
+    -- periodic interruptions
+    	-- for autopilot
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Interrupt_SPI_Th1;
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Interrupt_SPI_Th2;
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Interrupt_Modem_Th;
+    Dispatch_Protocol => periodic applies to autopilot.N_S_C_proc.Interrupt_GPS_Th;
+		-- for fly-by-wire    
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_Elevator_Th;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_MotorL_Th;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_MotorR_Th;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_AileronL_Th;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_AileronR_Th;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_Rudder_Th;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_SPI_1;
+    Dispatch_Protocol => periodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_RC_Th;
+    -- periods are already defined in threads implementations (autopilot_soft and flyByWire_soft packages)
+end paparazzi.PnP_tasks_interruptions;
+
+-- Second task set definition (extends and refines first task set definition)
+-- We consider periodic preemptive (PP) tasks and interruptions
+
+system implementation paparazzi.PP_tasks_interruptions 
+					extends paparazzi.PnP_tasks_interruptions
+	properties
+	-- preemptive scheduling (overrides properties from extended implementations)
+	Preemptive_Scheduler => true applies to autopilot.Proc_0;
+	Preemptive_Scheduler => true applies to fly_by_wire.MCU1_P;
+	-- other properties remain unchanged
+end paparazzi.PP_tasks_interruptions;
+
+-- Third task set definition (extends and refines second task set definition)
+-- We consider periodic preemptive (PP) tasks and aperiodic preemptive (AP) interruptions 
+
+system implementation paparazzi.PP_tasks_AP_interruptions extends paparazzi.PP_tasks_interruptions
+	properties
+	-- aperiodic interruptions (overrides properties from extended implementations)
+    	-- for autopilot
+    Dispatch_Protocol => aperiodic applies to autopilot.N_S_C_proc.Interrupt_SPI_Th1;
+    Dispatch_Protocol => aperiodic applies to autopilot.N_S_C_proc.Interrupt_SPI_Th2;
+    Dispatch_Protocol => aperiodic applies to autopilot.N_S_C_proc.Interrupt_Modem_Th;
+    Dispatch_Protocol => aperiodic applies to autopilot.N_S_C_proc.Interrupt_GPS_Th;
+		-- for fly-by-wire    
+    Dispatch_Protocol => aperiodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_Elevator_Th;
+    Dispatch_Protocol => aperiodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_MotorL_Th;
+    Dispatch_Protocol => aperiodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_MotorR_Th;
+    Dispatch_Protocol => aperiodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_AileronL_Th;
+    Dispatch_Protocol => aperiodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_AileronR_Th;
+    Dispatch_Protocol => aperiodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_Rudder_Th;
+    Dispatch_Protocol => aperiodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_SPI_1;
+    Dispatch_Protocol => aperiodic applies to fly_by_wire.Proc_RcptCde_PilotServ.Interrupt_RC_Th;
+    -- periods defined for aperiodic threads are deprecated (implementations in autopilot_soft and flyByWire_soft packages) 
+    -- other properties remain unchanged
+end paparazzi.PP_tasks_AP_interruptions;
+
+end paparazzi_system;
