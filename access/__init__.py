@@ -1,2 +1,2 @@
-#from aadl import *
+from aadl import *
 from cpal import *
