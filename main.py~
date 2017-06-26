@@ -1,5 +1,5 @@
 from model import *
-from access import *		# import useful accessors classes
+from access import CPAL_accessors		# import useful accessors classes
 from data import *				# import data classes
 from analysis import *				# import useful analysis classes
 from orchestration import *

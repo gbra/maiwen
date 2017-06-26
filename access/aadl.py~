@@ -49,7 +49,7 @@ class AADL_accessors(Accessors):
 #		choice ='paparazzi.basic_archi'
 #		choice='paparazzi_system::paparazzi.pnp_tasks_interruptions'
 		self.aadl_root=choice
-		print "hardcoded choice: ", choice
+#		print "hardcoded choice: ", choice
 		err=ocarina.instantiate(choice);           # instantiate system
     		print ' ' * self._indentation, err		
 	

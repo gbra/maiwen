@@ -1,4 +1,9 @@
-import ocarina, lmp
+try:
+    import ocarina, lmp
+except ImportError as error:
+    print 'Import error: ', error, ', you will not be able to load AADL models'
+    pass  
+
 import os, inspect, sys
 from utils.utils import *
 from utils.termcolor import colored
@@ -210,4 +215,3 @@ class AADL_accessors(Accessors):
 	print ' ' * self._indentation, "Request root system-> ", lmp.getRoot()[0]  
 #	return lmp.getRoot()[0]
 	return "mars_pathfinder::sys_mars_pathfinder.impl"
-

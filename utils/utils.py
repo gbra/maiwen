@@ -1,4 +1,9 @@
-import ocarina
+try:
+    import ocarina
+except ImportError as error:
+    print 'Import error: ', error, ', you will not be able to load AADL models'
+    pass  
+
 import sys
 
 class switch(object):
@@ -92,5 +97,6 @@ def getAADLTimeFromAADLTimeRange(aadl_time_range, case):
 	return upper_value
     else : return None
 	
+
 
 
