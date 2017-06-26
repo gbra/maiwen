@@ -19,7 +19,7 @@ To use the orchestration module:
 1. Clone or download the repository
 
  ```
- git https://github.com/gbra/maiwen
+ git clone https://github.com/gbra/maiwen
  ```
 
 2. Run the main script 

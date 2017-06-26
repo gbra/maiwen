@@ -8,15 +8,25 @@ Maiwen enables to automatically analyse the properties of a system from a reposi
 3. Orchestration of the analysis using contracts in Alloy
 
 ## Prerequisites
-Python (developped and tested with Python 2.7.8)
-Accessors: 
+Python (developped and tested with Python 2.7.8)\s\s
+For accessors: 
 * Ocarina for AADL models (see https://github.com/OpenAADL/ocarina)
-* cpal2x tool to generate CPAL models to the rt-format  (see https://www.designcps.com/binaries/)
-Orchestration:
+* cpal2x tool to generate CPAL models to the rt-format  (see https://www.designcps.com/binaries/)\s\s
+To use the orchestration module:
 * Alloy (see http://alloy.mit.edu/alloy/)
 
 ## Usage
-$python main.py
+1. Clone or download the repository
+
+ ```
+ git https://github.com/gbra/maiwen
+ ```
+
+2. Run the main script 
+
+ ```
+ python main.py
+ ```
 
 ## Authors
 
