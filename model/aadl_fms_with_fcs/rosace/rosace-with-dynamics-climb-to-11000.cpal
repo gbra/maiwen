@@ -1,0 +1,13 @@
+include rosace-with-dynamics.cpal
+  
+/*  Flight Level change: 10000 m -> 11000 m and Airspeed: 230 m/s  */
+processdef ClimbTo11000(out float64: target_altitude, out float64: target_airspeed)
+{
+  state Main {
+    target_altitude = 11000.0;
+    flight_mode = AUTO;
+    /*target_airspeed = 230.0;*/
+  }
+}
+
+process ClimbTo11000: scenario3[10Hz](h_c, Va_c);

@@ -1,0 +1,14 @@
+/* I/Os of the controller */
+var float64: delta_x_c;
+var float64: delta_e_c;
+var float64: T;
+var float64: Va;
+var float64: az;
+var float64: q;
+var float64: Vz;
+var float64: h;
+
+/* Setpoint commands */
+var float64: Vz_c     = -2.5;
+var float64: Va_c     =  0.0;
+var float64: h_c      =  10000.0;

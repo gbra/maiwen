@@ -1,0 +1,17 @@
+/* wcet measured from 
+source model: rosace-with-dynamics-climb-to-11000.cpal
+binary: out_raspberry/rosace3.ast
+platform: raspberry */
+
+include rosace-controller.cpal
+
+@cpal:time {
+  va_filter.wcet = 259us894ns;
+  vz_filter.wcet = 192us916ns;
+  q_filter.wcet = 209us739ns;
+  az_filter.wcet = 190us832ns;
+  h_filter.wcet = 238us227ns;
+  altitude_holder.wcet = 262us551ns;
+  vz_controller.wcet = 216us561ns;
+  va_controller.wcet = 241us405ns;
+}

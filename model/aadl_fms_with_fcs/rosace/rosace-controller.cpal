@@ -1,0 +1,254 @@
+include constants.cpal
+
+/*cpal:graphviz cmd=dot without-gv with-io*/
+/*cpal:tasks time=100ms*/
+enum Flight_Mode
+{
+  MANUAL, AUTO
+};
+  
+/*
+const float64: dt       = 1.0f/200.0;
+const float64: dt_de    = 1.0/200.0;
+const float64: dt_dx    = 1.0/200.0;
+*/
+
+/* Controller parameters */
+/* Altitude hold */
+const float64: Kp_h       = 0.1014048;
+const float64: Ki_h       = 0.0048288;
+const float64: h_switch   = 50.0;
+
+/* Va Speed controller */
+
+/*
+// const float64: K1_intVa =  0.06018;
+// const float64: K1_Va    = -0.53115;
+// const float64: K1_Vz    = -0.08956;
+// const float64: K1_q     =  24.44890;
+*/
+
+const float64: K1_intVa =   0.049802610664357;
+const float64: K1_Va     = -0.486813084356079;
+const float64: K1_Vz     = -0.077603095495388;
+const float64: K1_q      = 21.692383376322041;
+
+/* Vz Speed controller */
+
+/*
+// const float64: K2_intVz =  0.0006545;
+// const float64: K2_Vz    = -0.0031107;
+// const float64: K2_q     =  0.4490749;
+// const float64: K2_az    = -0.0002038;
+*/
+
+const float64: K2_intVz   = 0.000627342822264;
+const float64: K2_Vz     = -0.003252836726554;
+const float64: K2_q       = 0.376071446897134;
+const float64: K2_az     = -0.001566907423747;
+
+
+
+
+/* in-memory buffer for traces 
+//float64: sample[SPL_SIZE][NBMAX_SAMPLE];
+//static unsigned long instant = 0;
+//static unsigned long sample_instant=0;
+*/
+
+/* #define FMTFLOAT "%5.15f"*/
+
+struct Filter_Conf
+{
+  float64: a0;
+  float64: a1;
+  float64: b0;
+  float64: b1;
+  float64: x1_init;
+  float64: x2_init;
+};
+
+/* 100 Hz coefficients */
+var Filter_Conf: Va_Filter_Conf =
+{
+  0.956543675476034,
+  -1.955578398054313,
+  0.000479064865372430,
+  0.000486212556348925,
+  0.0,
+  0.0
+};
+
+var Filter_Conf: Vz_Filter_Conf;
+
+var Filter_Conf: Q_Filter_Conf =
+{
+  0.766000101841272,
+  -1.734903205885821,
+  0.014857648981438,
+  0.016239246974013,
+  0.0,
+  0.0
+};
+
+var Filter_Conf: Az_Filter_Conf =
+{
+ 0.411240701442774,
+  -1.158045899830964,
+  0.107849979167580,
+  0.145344822444230,
+  0.0,
+  0.0
+};
+
+var Filter_Conf: H_Filter_Conf =
+{
+ 0.766000101841272,
+  -1.734903205885821,
+  0.014857648981438,
+  0.016239246974013,
+  0.0,
+  0.0
+};
+
+init()
+{
+  Va_Filter_Conf.x1_init = Va_eq * (1.0 + Va_Filter_Conf.a1 - Va_Filter_Conf.b1);
+  Va_Filter_Conf.x2_init = Va_eq;
+  Vz_Filter_Conf.a0 = Va_Filter_Conf.a0;
+  Vz_Filter_Conf.a1 = Va_Filter_Conf.a1;
+  Vz_Filter_Conf.b0 = Va_Filter_Conf.b0;
+  Vz_Filter_Conf.b1 = Va_Filter_Conf.b1;
+  Vz_Filter_Conf.x1_init = 0.0;
+  Vz_Filter_Conf.x2_init = 0.0;
+  H_Filter_Conf.x1_init = h_eq * (1.0 + H_Filter_Conf.a1 - H_Filter_Conf.b1);
+  H_Filter_Conf.x2_init = h_eq;
+}
+
+processdef Filter(
+  in Filter_Conf: c,
+  in float64: input,
+  out float64: y)
+{
+  static var float64: x1 = 0.0;
+  static var float64: x2 = 0.0;
+
+  state Debut {
+    var float64: x1_tmp;
+	var float64: x2_tmp;
+	x1     = c.x1_init;
+	x2     = c.x2_init;
+    y = x2;
+    /* State */
+	x1_tmp =     - c.a0 * x2 + c.b0 * input;
+	x2_tmp =  x1 - c.a1 * x2 + c.b1 * input;
+	/* Update */
+    x1 = x1_tmp;
+	x2 = x2_tmp;
+  }
+  on (true) to Main;
+  
+  state Main {
+    var float64: x1_tmp;
+	var float64: x2_tmp;
+	/*  Output*/
+	y = x2;
+	/* State */
+	x1_tmp =     - c.a0 * x2 + c.b0 * input;
+	x2_tmp =  x1 - c.a1 * x2 + c.b1 * input;
+	/* Update */
+    x1 = x1_tmp;
+	x2 = x2_tmp;
+  }
+}
+
+processdef Altitude_Holder(
+  in Flight_Mode: mode,
+  in float64: Vz_input,
+  in float64: Vz_link,
+  in float64: h_f,
+  in float64: h_input,
+  out float64: y
+)
+{
+  static var float64: integrator = 532.2730285;
+  
+  state Auto {
+    var float64: error = h_f - h_input;
+    
+    if (error < -50.0) {
+      y = Vz_link;
+    } else if (error > 50.0) {
+   
+      y = -Vz_link;
+    } else {
+      /* Output */
+      y = Kp_h * error + Ki_h * integrator;
+      /* state */
+      integrator = integrator + (float64.as(self.period) / float64.as(1s)) * error;
+    }
+  }
+  on (mode == MANUAL) to Manual;
+  
+  state Manual {
+    y = Vz_input;/* TODO */
+  }
+  on (mode == AUTO) to Auto;
+}
+
+processdef Va_Controller(
+  in float64: Va_f,
+  in float64: Vz_f,
+  in float64: q_f,
+  in float64: Va_input,
+  out float64: y)
+{
+  static var float64: integrator = 0.0;
+  state Main {
+    /* Output */
+    y = K1_intVa * integrator + K1_Va * (Va_f - Va_eq) + K1_Vz * Vz_f + K1_q * q_f + delta_th_eq;
+/*    IO.println("%f %f %f %f", Va_f, Va_input, Va_eq, y); */
+    /* state */
+    integrator = integrator + float64.as(self.period) / float64.as(1s) * (Va_input - Va_f + Va_eq);
+  }
+}
+
+processdef Vz_Controller(
+  in float64: Vz_f,
+  in float64: Vz_input,
+  in float64: q_f,
+  in float64: az_f,
+  out float64: y)
+{
+  static var float64: integrator = 0.0;
+  state Main {
+    /* Output */
+    y = K2_intVz * integrator + K2_Vz * Vz_f + K2_q * q_f + K2_az * az_f + delta_e_eq;
+    /* state */
+    integrator = integrator + float64.as(self.period) /float64.as(1s) * (Vz_input - Vz_f);
+  }
+}
+
+include rosace-interface.cpal
+
+var float64: Va_meas;
+process Filter: va_filter[100Hz](Va_Filter_Conf, Va, Va_meas);
+
+var float64: Vz_meas;
+process Filter: vz_filter[100Hz](Vz_Filter_Conf, Vz, Vz_meas);
+
+var float64: q_meas;
+process Filter: q_filter[100Hz](Q_Filter_Conf, q, q_meas);
+
+var float64: az_meas;
+process Filter: az_filter[100Hz](Az_Filter_Conf, az, az_meas);
+
+var float64: h_meas;
+process Filter: h_filter[100Hz](H_Filter_Conf, h, h_meas);
+
+var Flight_Mode: flight_mode = AUTO;
+var float64: Vz_link = -2.5;
+process Altitude_Holder: altitude_holder[50Hz](flight_mode, Vz_c, Vz_link, h_meas, h_c, Vz_c);
+
+process Vz_Controller: vz_controller[50Hz](Vz_meas, Vz_c, q_meas, az_meas, delta_e_c);
+process Va_Controller: va_controller[50Hz](Va_meas, Vz_meas, q_meas, Va_c, delta_x_c);

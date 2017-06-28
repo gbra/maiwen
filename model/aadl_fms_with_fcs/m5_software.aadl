@@ -1,0 +1,69 @@
+package m5_software
+public
+
+with dataType;
+-------------------------------------------------------------------
+-----------------------processes-------------------------------------
+-------------------------------------------------------------------
+
+process prs_FCS
+	features
+	-- ports from the ROSACE case study
+	h_apex : in event data port dataType::altitude;
+	az_apex : in event data port dataType::vertical_acceleration;
+	Vz_apex : in event data port dataType::vertical_speed;
+	q_apex : in event data port dataType::pitch_rate;
+	Va_apex : in event data port dataType::true_airspeed;
+	h_c_apex : in event data port dataType::altitude_command;
+	Va_c_apex : in event data port dataType::airspeed_command;
+	delta_e_c_apex : out event data port dataType::elevator_deflection_command;
+	delta_x_c_apex : out event data port dataType::throttle_command;
+	-- other ports from the "Avionics Handbook" 
+	tactical_cmds_apex : in event data port dataType::tactical_cmds;
+	flight_mode_apex : in event data port dataType::flight_mode;
+	roll_axis_cmds_apex : out event data port dataType::roll_axis_cmds;
+	pitch_axis_cmds_apex : out event data port dataType::pitch_axis_cmds;
+	thrust_axis_cmds_apex : out event data port dataType::thrust_axis_cmds;	
+end prs_FCS;
+
+process implementation prs_FCS.impl
+	subcomponents
+	flight_controller : thread th_flight_controller.impl;
+	-- other threads
+	connections
+	h_con : port _h_apex -> flight_controller.h;
+	az_con : port az_apex -> flight_controller.az;
+	Vz_con : port Vz_apex -> flight_controller.Vz;
+	q_con : port q_apex -> flight_controller.q;
+	Va_con : port Va_apex -> flight_controller.Va;
+	h_c_con : port h_c_apex -> flight_controller.h_c;
+	Va_c_con : port Va_c_apex -> flight_controller.Va_c;
+	delta_e_c_con : port flight_controller.delta_e_c -> delta_e_c_apex;
+	delta_x_c_con : port flight_controller.delta_x_c -> delta_x_c_apex;
+	-- other connections involving the other threads and ports 
+end prs_FCS.impl;
+
+-------------------------------------------------------------------
+-----------------------threads-------------------------------------
+-------------------------------------------------------------------
+
+thread th_flight_controller
+	features
+	h : in event data port dataType::altitude;
+	az : in event data port dataType::vertical_acceleration;
+	Vz : in event data port dataType::vertical_speed;
+	q : in event data port dataType::pitch_rate;
+	Va : in event data port dataType::true_airspeed;
+	h_c : in event data port dataType::altitude_command;
+	Va_c : in event data port dataType::airspeed_command;
+	delta_e_c : out event data port dataType::elevator_deflection_command;
+	delta_x_c : out event data port dataType::throttle_command;
+end th_flight_controller;
+
+thread implementation th_flight_controller.impl
+	properties
+    Source_Language => (CPAL);
+    Source_Text     => ("rosace/rosace-controller.cpal");
+end th_flight_controller.impl;
+
+end m5_software;

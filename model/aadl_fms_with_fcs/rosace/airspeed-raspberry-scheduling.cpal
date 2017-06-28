@@ -1,0 +1,26 @@
+/* wcet measured from 
+source model: rosace-with-dynamics-increase-airspeed.cpal 
+binary: out_raspberry/rosace2.ast
+platform: raspberry */
+
+include rosace-controller.cpal
+
+@cpal:time {
+  va_filter.wcet = 241us769ns;
+  vz_filter.wcet = 252us915ns;
+  q_filter.wcet = 218us801ns;
+  az_filter.wcet = 371us92ns;
+  h_filter.wcet = 303us957ns;
+  altitude_holder.wcet = 164us531ns;
+  vz_controller.wcet = 263us957ns;
+  va_controller.wcet = 232us967ns;
+  
+  va_filter.execution_time = 241us769ns;
+  vz_filter.execution_time = 252us915ns;
+  q_filter.execution_time = 218us801ns;
+  az_filter.execution_time = 371us92ns;
+  h_filter.execution_time = 303us957ns;
+  altitude_holder.execution_time = 164us531ns;
+  vz_controller.execution_time = 263us957ns;
+  va_controller.execution_time = 232us967ns;
+}

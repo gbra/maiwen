@@ -1,0 +1,270 @@
+package subsystem
+public
+
+with hardware;
+with m1_software;
+with m2_software;
+with m3_software;
+with m4_software;
+with m5_software;
+with dataType;
+with afdx_properties;
+
+-----------------------------------------------------------------
+-------------------------devices---------------------------------
+-----------------------------------------------------------------
+device keyboard
+	features
+	-- software interface
+	ph_req : out event data port dataType::request_pilot;
+	-- hardware interface
+	can_access : requires bus access hardware::can;
+	flows
+	req_src : flow source ph_req;
+end keyboard;
+
+device display
+	features
+	-- software interface
+	ph_disp : in event data port dataType::display;
+	-- hardware interface
+	can_access  : requires bus access hardware::can;
+	flows
+	disp_sink : flow sink ph_disp;
+end display;
+
+device RDC
+	features
+	ph_pres : out event data port dataType::pression;
+	afdx_access  : requires bus access hardware::physical_afdx_link.impl;
+end RDC;
+
+-----------------------------------------------------------------
+---------------------distributed systems-------------------------
+-----------------------------------------------------------------
+
+system m1_system
+	features
+	-- software interface
+	ph_req1 : in event data port dataType::request_pilot;
+	ph_wpInfo1 : in event data port dataType::waypoint_info;
+	ph_ETA1 : in event data port dataType::time;
+	ph_wpId1 : out event data port dataType::waypoint_identifier;
+	ph_disp1 : out event data port dataType::display;
+	-- hardware interface
+	can_keyboard_access : requires bus access hardware::can; 
+	can_display_access : requires bus access hardware::can; 
+	afdx_access  : requires bus access hardware::physical_afdx_link.impl;
+	flows
+	req_m1_wpId : flow path ph_req1 -> ph_wpId1;
+	wpInfo_m1_disp : flow path ph_wpInfo1 -> ph_disp1;
+	wpId_src :flow source ph_wpId1;
+	wpInfo_sink :flow sink ph_wpInfo1;
+	properties
+	AFDX_Properties::AFDX_Es_Delay=>AFDX_Properties::AFDX_Std_Es_Delay;	
+end m1_system;
+
+system implementation m1_system.impl
+
+	subcomponents
+	mainmemory : memory hardware::mainmemory.m1;
+	cpu : processor hardware::arinckernel.m1;
+	ku1 : process m1_software::prs_KU1.impl;
+	mfd1 : process m1_software::prs_MFD1.impl;
+	
+	connections
+	conn_req : port ph_req1 -> ku1.req1_apex;
+	conn_wpInfo : port ph_wpInfo1 -> mfd1.wpInfo1_apex;
+	conn_ETA : port ph_ETA1 -> mfd1.ETA1_apex;
+	conn_wpId : port  ku1.wpId1_apex -> ph_wpId1;
+	conn_disp : port mfd1.disp1_apex -> ph_disp1;
+	
+	flows
+	req_m1_wpId : flow path ph_req1 -> conn_req-> ku1.fromReqtoId -> conn_wpId -> ph_wpId1;
+	wpInfo_m1_disp : flow path ph_wpInfo1 -> conn_wpInfo-> mfd1.fromInfoToDisp -> conn_disp -> ph_disp1;
+				
+	properties
+	Actual_Processor_Binding => (reference (cpu.partition_KU1)) applies to ku1;
+	Actual_Processor_Binding => (reference (cpu.partition_MFD1)) applies to mfd1;
+	
+	Actual_Memory_Binding => (reference (mainmemory.mem_ku1)) applies to ku1;
+	Actual_Memory_Binding => (reference (mainmemory.mem_mfd1)) applies to mfd1;
+end m1_system.impl;
+
+system m2_system
+	features
+	-- software interface
+	ph_wpId1 : in event data port dataType::waypoint_identifier;
+	ph_answer1 : in event data port dataType::database_answer;
+	ph_speed1 : in event data port dataType::speed;
+	ph_query1 : out event data port dataType::database_query;
+	ph_wpInfo1 : out event data port dataType::waypoint_info;
+	ph_ETA1 : out event data port dataType::time;
+	
+    ph_tactical_cmds : out event data port dataType::tactical_cmds;
+	ph_flight_mode : out event data port dataType::flight_mode;
+	ph_roll_axis_cmds : in event data port dataType::roll_axis_cmds;
+	ph_pitch_axis_cmds : in event data port dataType::pitch_axis_cmds;
+	ph_thrust_axis_cmds : in event data port dataType::thrust_axis_cmds;
+	-- hardware interface
+	afdx_access  : requires bus access hardware::physical_afdx_link.impl;
+	flows
+	wpId_m2_query : flow path ph_wpId1 -> ph_query1;
+	answer_m2_wpInfo : flow path ph_answer1 -> ph_wpInfo1;
+	speed_m2_ETA : flow path ph_speed1 -> ph_ETA1;
+	wpId_sink :flow sink ph_wpId1;
+	query_src :flow source ph_query1;
+	answer_sink :flow sink ph_answer1;
+	wpInfo_src :flow source ph_wpInfo1;
+	speed_sink :flow sink ph_speed1;
+	properties
+	AFDX_Properties::AFDX_Es_Delay=>AFDX_Properties::AFDX_Std_Es_Delay;
+end m2_system;
+
+system implementation m2_system.impl
+
+	subcomponents
+	mainmemory : memory hardware::mainmemory.m2;
+	cpu : processor hardware::arinckernel.m2;
+	fm1 : process m2_software::prs_FM1.impl;
+	
+	connections
+	conn_wpId : port ph_wpId1 -> fm1.wpId1_apex;
+	conn_answer : port ph_answer1 -> fm1.answer1_apex;
+	conn_speed : port ph_speed1 -> fm1.speed1_apex;	
+	conn_query : port  fm1.query1_apex -> ph_query1;
+	conn_wpinfo : port  fm1.wpInfo1_apex -> ph_wpInfo1;
+	conn_ETA : port fm1.ETA1_apex -> ph_ETA1;
+	
+	conn_tactical_cmds : port fm1.tactical_cmds_apex -> ph_tactical_cmds;
+	conn_flight_mode : port fm1.flight_mode_apex -> ph_flight_mode;
+	conn_roll_axis_cmds : port ph_roll_axis_cmds -> fm1.roll_axis_cmds_apex;
+	conn_pitch_axis_cmds : port ph_pitch_axis_cmds -> fm1.pitch_axis_cmds_apex;
+	conn_thrust_axis_cmds : port ph_thrust_axis_cmds -> fm1.thrust_axis_cmds_apex;
+	
+	flows
+	wpId_m2_query : flow path ph_wpId1 -> conn_wpId-> fm1.fromIdtoQuery -> conn_query -> ph_query1;
+	answer_m2_wpInfo : flow path ph_answer1 -> conn_answer-> fm1.fromAnswerToInfo -> conn_wpInfo -> ph_wpInfo1;
+	speed_m2_ETA : flow path ph_speed1 -> conn_speed-> fm1.fromSpeedToETA -> conn_ETA -> ph_ETA1;
+		
+	properties
+	Actual_Processor_Binding => (reference (cpu.partition_FM1)) applies to fm1;
+	
+	Actual_Memory_Binding => (reference (mainmemory.mem_fm1)) applies to fm1;
+end m2_system.impl;
+
+system m3_system
+	features
+	-- software interface
+	ph_pres1 : in event data port dataType::pression;
+	ph_speed1 : out event data port dataType::speed;
+	-- hardware interface
+	afdx_access  : requires bus access hardware::physical_afdx_link.impl;
+	flows
+	pres_m3_speed : flow path ph_pres1 -> ph_speed1;
+ 	speed_src :flow source ph_speed1;
+	properties
+	AFDX_Properties::AFDX_Es_Delay=>AFDX_Properties::AFDX_Std_Es_Delay;
+end m3_system;
+
+system implementation m3_system.impl
+
+	subcomponents
+	mainmemory : memory hardware::mainmemory.m3;
+	cpu : processor hardware::arinckernel.m3;
+	adiru1 : process m3_software::prs_ADIRU1.impl;
+	
+	connections
+	ph_pres : port ph_pres1 -> adiru1.pres1_apex;	
+	ph_speed : port  adiru1.speed1_apex -> ph_speed1;
+
+	flows
+	pres_m3_speed : flow path ph_pres1 -> ph_pres -> adiru1.fromPresToSpeed -> ph_speed -> ph_speed1;
+
+	properties
+	Actual_Processor_Binding => (reference (cpu.partition_ADIRU1)) applies to adiru1;
+	
+	Actual_Memory_Binding => (reference (mainmemory.mem_adiru1)) applies to adiru1;
+end m3_system.impl;
+
+system m4_system
+	features
+	-- software interface
+	ph_query1 : in event data port dataType::database_query;
+	ph_answer1 : out event data port dataType::database_answer;
+	-- hardware interface
+	afdx_access  : requires bus access hardware::physical_afdx_link.impl;
+	flows
+	query_m4_answer : flow path ph_query1 -> ph_answer1;
+	query_sink :flow sink ph_query1;
+	answer_src :flow source ph_answer1;
+	properties
+	AFDX_Properties::AFDX_Es_Delay=>AFDX_Properties::AFDX_Std_Es_Delay;
+end m4_system;
+
+system implementation m4_system.impl
+
+	subcomponents
+	mainmemory : memory hardware::mainmemory.m4;
+	cpu : processor hardware::arinckernel.m4;
+	ndb : process m4_software::prs_NDB.impl;
+
+	connections
+	conn_query : port ph_query1 -> ndb.query1_apex;	
+	conn_answer : port  ndb.answer1_apex -> ph_answer1;
+	
+	flows
+	query_m4_answer : flow path ph_query1 -> conn_query -> ndb.fromQueryToAnswer -> conn_answer -> ph_answer1;
+		
+	properties
+	Actual_Processor_Binding => (reference (cpu.partition_NDB)) applies to ndb;
+	
+	Actual_Memory_Binding => (reference (mainmemory.mem_ndb)) applies to ndb;
+end m4_system.impl;
+
+system m5_system
+	features
+	-- software interface
+	ph_h : in event data port dataType::altitude;
+	ph_az : in event data port dataType::vertical_acceleration;
+	ph_Vz : in event data port dataType::vertical_speed;
+	ph_q : in event data port dataType::pitch_rate;
+	ph_Va : in event data port dataType::true_airspeed;
+	ph_h_c : in event data port dataType::altitude_command;
+	ph_Va_c : in event data port dataType::airspeed_command;
+	ph_delta_e_c : out event data port dataType::elevator_deflection_command;
+	ph_delta_x_c : out event data port dataType::throttle_command;
+	ph_tactical_cmds : in event data port dataType::tactical_cmds;
+	ph_flight_mode : in event data port dataType::flight_mode;
+	ph_roll_axis_cmds : out event data port dataType::roll_axis_cmds;
+	ph_pitch_axis_cmds : out event data port dataType::pitch_axis_cmds;
+	ph_thrust_axis_cmds : out event data port dataType::thrust_axis_cmds;
+	-- hardware interface
+	afdx_access  : requires bus access hardware::physical_afdx_link.impl;
+	properties
+	AFDX_Properties::AFDX_Es_Delay=>AFDX_Properties::AFDX_Std_Es_Delay;
+end m5_system;
+
+system implementation m5_system.impl
+
+	subcomponents
+	mainmemory : memory hardware::mainmemory.m5;
+	cpu : processor hardware::arinckernel.m5;
+	fcs : process m5_software::prs_FCs.impl;
+
+	connections
+	conn_tactical_cmds : port ph_tactical_cmds -> fcs.tactical_cmds_apex;
+	conn_flight_mode : port ph_flight_mode -> fcs.flight_mode_apex;
+	conn_roll_axis_cmds : port fcs.roll_axis_cmds_apex -> ph_roll_axis_cmds;
+	conn_pitch_axis_cmds : port fcs.pitch_axis_cmds_apex -> ph_pitch_axis_cmds;
+	conn_thrust_axis_cmds : port fcs.thrust_axis_cmds_apex -> ph_thrust_axis_cmds; 
+	
+	-- other connections with apex	
+	
+	properties
+	Actual_Processor_Binding => (reference (cpu.partition_FCS)) applies to fcs;
+	
+	Actual_Memory_Binding => (reference (mainmemory.mem_fcs)) applies to fcs;
+end m5_system.impl;
+
+end subsystem;

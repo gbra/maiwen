@@ -1,0 +1,145 @@
+include constants.cpal
+
+/* Atmosphere parameters */
+const float64: rho0   = 1.225;
+const float64: g0     = 9.80665;
+const float64: T0_0   = 288.15;
+const float64: T0_h  = -0.0065;
+const float64: Rs     = 287.05;
+
+/* Aircraft parameters */
+const float64: masse       = 57837.5;
+const float64: I_y         = 3781272.0;
+const float64: S          =  122.6;
+const float64: cbar        = 4.29;
+const float64: CD_0        = 0.016;
+const float64: CD_alpha    = 2.5;
+const float64: CD_deltae   = 0.05;
+const float64: CL_alpha    = 5.5;
+const float64: CL_deltae   = 0.193;
+const float64: alpha_0    = -0.05;
+const float64: Cm_0        = 0.04;
+const float64: Cm_alpha   = -0.83;
+const float64: Cm_deltae  = -1.5;
+const float64: Cm_q       = -30.0;
+
+processdef Engine(in float64: delta_th_c, out float64: y)
+{
+  static var float64: x1 = delta_th_eq;
+  const float64: tau = 0.75;
+  
+  state Main {
+    var float64: x1_dot;
+    /* Output */
+    y = 26350.0 * x1;
+    /* State equation */
+    x1_dot = (-tau) * x1 + tau * delta_th_c;
+    /* Update state */
+    x1 = x1 + float64.as(self.period) / float64.as(1s) * x1_dot;
+  }
+}
+
+processdef Elevator(in float64: delta_c, out float64: y)
+{
+  const float64: omega = 25.0;
+  const float64: xi = 0.85;
+  static var float64: x1 = delta_e_eq;
+  static var float64: x2 = 0.0;
+  
+  state Main {
+    var float64: dt = float64.as(self.period) / float64.as(1s);
+    var float64: x1_dot;
+    var float64: x2_dot;
+    /* Output */
+    y = x1;
+    /* State Equation */
+    x1_dot = x2;
+    x2_dot = (-omega) * omega * x1 - 2.0 * xi * omega * x2 + omega * omega * delta_c;
+    /* Update state */
+    x1 = x1 + dt * x1_dot;
+    x2 = x2 + dt * x2_dot;
+  }
+}
+
+/* Flight dynamics */
+processdef Aircraft_Dynamics(
+  in float64: delta_e,
+  in float64: i_T,
+  out float64: outputs_Va,
+  out float64: outputs_az,
+  out float64: outputs_q,
+  out float64: outputs_Vz,
+  out float64: outputs_h
+  )
+{
+  static var bool: debut = true;
+  static var float64: u;
+  static var float64: w;
+  static var float64: alpha;
+  static var float64: theta;
+  static var float64: rho;
+  static var float64: V;
+  static var float64: qbar;
+  static var float64: CL;
+  static var float64: CD;
+  static var float64: Cm;
+  static var float64: l_q;
+  static var float64: l_h;
+  static var float64: Xa;
+  static var float64: Za;
+  static var float64: Ma;
+  static var float64: u_dot;
+  static var float64: v_dot;
+  static var float64: w_dot;
+  static var float64: theta_dot;
+  static var float64: q_dot;
+  static var float64: h_dot;
+
+  state Main {
+    var float64: dt = float64.as(self.period) / float64.as(1s);
+    if (debut) {
+      debut = false;
+      u = Va_eq * float64.cos(theta_eq);
+      w = Va_eq * float64.sin(theta_eq);
+      l_q = 0.0;
+      theta = theta_eq;
+      l_h = h_eq;
+    }
+    rho   = rho0 * float64.pow(1.0 + T0_h / T0_0 * l_h, (-g0) / (Rs * T0_h) - 1.0);
+	alpha = float64.atan(w / u);
+	V     = float64.sqrt(u * u + w * w);
+	qbar  = 0.5 * rho * V * V;
+	CL    = CL_deltae * delta_e + CL_alpha * (alpha - alpha_0);
+	CD    = CD_0 + CD_deltae * delta_e + CD_alpha * (alpha - alpha_0) * (alpha - alpha_0);
+	Cm    = Cm_0 + Cm_deltae * delta_e + Cm_alpha * alpha + 0.5 * Cm_q * l_q * cbar / V;
+	Xa    = (-qbar) * S * (CD * float64.cos(alpha) - CL * float64.sin(alpha));
+	Za    = (-qbar) * S * (CD * float64.sin(alpha) + CL * float64.cos(alpha));
+	Ma    = qbar * cbar * S * Cm;
+
+	/* Output */
+	outputs_Va = V;
+	outputs_Vz = w * float64.cos(theta) - u * float64.sin(theta);
+	outputs_q  = l_q;
+	outputs_az = g0 * float64.cos(theta) + Za / masse;
+    outputs_h = l_h;
+	
+	/* State Equation */
+	u_dot     = (-g0) * float64.sin(theta) - l_q * w + (Xa + i_T) / masse;
+	w_dot     = g0 * float64.cos(theta) + l_q * u + Za / masse;
+	q_dot     = Ma / I_y;
+	theta_dot = l_q;
+	h_dot     = u * float64.sin(theta) - w * float64.cos(theta);
+	/* Update State */
+	u     = u     + dt * u_dot;
+	w     = w     + dt * w_dot;
+	l_q   = l_q   + dt * q_dot;
+	theta = theta + dt * theta_dot;
+	l_h   = l_h   + dt * h_dot;
+  }
+}
+
+var float64: delta_e;
+include rosace-interface.cpal
+process Engine:   engine[200Hz](delta_x_c, T);
+process Elevator: elevator[200Hz](delta_e_c, delta_e);
+process Aircraft_Dynamics: flight_dynamics[200Hz](delta_e, T, Va, az, q, Vz, h);

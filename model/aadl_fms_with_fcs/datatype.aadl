@@ -1,0 +1,97 @@
+package dataType
+public
+
+-- Data from the FMS case study (Lauer et al.)
+
+data request_pilot 
+--	properties
+--	Source_Data_Size => 600 Bytes;
+end request_pilot;
+
+data display
+--	properties
+--	Source_Data_Size => 600 Bytes; 
+end display;
+
+data pression
+--	properties
+--	Source_Data_Size => 600 Bytes; 
+end pression;
+
+data waypoint_identifier 
+	properties
+	Source_Data_Size => 600 Bytes;
+end waypoint_identifier;
+
+data database_query
+	properties
+	Source_Data_Size => 1000 Bytes; 
+end database_query;
+
+data database_answer
+	properties
+	Source_Data_Size => 4000 Bytes; 
+end database_answer;
+
+data waypoint_info
+	properties
+	Source_Data_Size => 1000 Bytes; 
+end waypoint_info;
+
+data speed
+	properties
+	Source_Data_Size => 700 Bytes; 
+end speed;
+
+data time
+	properties
+	Source_Data_Size => 5000 Bytes; 
+end time;
+
+-- Data from the "Avionics Handbook" (‎Spitzer et al.)
+
+data roll_axis_cmds 
+end roll_axis_cmds;
+
+data pitch_axis_cmds 
+end pitch_axis_cmds;
+
+data thrust_axis_cmds 
+end thrust_axis_cmds;
+
+data tactical_cmds
+end tactical_cmds;
+
+data flight_mode	
+end flight_mode;
+
+-- Data from the ROSACE case study (Pagetti et al.)
+
+data altitude	
+end altitude;
+
+data vertical_acceleration
+end vertical_acceleration;
+
+data vertical_speed	
+end vertical_speed;
+
+data pitch_rate
+end pitch_rate;
+
+data true_airspeed	
+end true_airspeed;
+
+data altitude_command	
+end altitude_command;
+
+data airspeed_command
+end airspeed_command;
+
+data elevator_deflection_command	
+end elevator_deflection_command;
+
+data throttle_command	
+end throttle_command;
+
+end dataType;

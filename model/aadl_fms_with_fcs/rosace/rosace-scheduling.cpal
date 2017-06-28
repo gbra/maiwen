@@ -1,0 +1,20 @@
+include rosace-controller.cpal
+  
+@cpal:time{
+  altitude_holder.execution_time=100us;
+  h_filter.execution_time = 100us;
+  vz_filter.execution_time = 100us;
+  va_filter.execution_time = 100us;
+  vz_controller.execution_time = 100us;
+  q_filter.execution_time = 100us;
+  az_filter.execution_time = 100us;
+  va_controller.execution_time = 100us;
+  altitude_holder.wcet=100us;
+  h_filter.wcet = 100us;
+  vz_filter.wcet = 100us;
+  va_filter.wcet = 100us;
+  vz_controller.wcet = 100us;
+  q_filter.wcet = 100us;
+  az_filter.wcet = 100us;
+  va_controller.wcet = 100us;
+}

@@ -1,0 +1,9 @@
+const float64: delta_th_eq = 1.5868660794926;
+const float64: delta_e_eq = 0.012009615652468;
+
+/* Trimming parameters */
+const float64: h_eq        = 10000.0;
+const float64: Va_eq       = 230.0;
+const float64: Vz_eq       = 0.0;
+const float64: alpha_eq    = 0.026485847681737;
+const float64: theta_eq  = 0.026485847681737;

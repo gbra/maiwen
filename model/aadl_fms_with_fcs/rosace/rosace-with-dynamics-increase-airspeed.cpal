@@ -1,0 +1,13 @@
+include rosace-with-dynamics.cpal
+  
+/* Airspeed control: 230 m/s -> 235 m/s and Vertical speed: 0 m/s  */
+processdef Airspeed(out float64: target_airspeed, out float64: target_vz, out Flight_Mode: mode)
+{
+  state Main {
+    target_airspeed = 235.0;
+    target_vz = 0.0;
+    mode = MANUAL;
+  }
+}
+
+process Airspeed: scenario2[10Hz](Va_c, Vz_c, flight_mode);

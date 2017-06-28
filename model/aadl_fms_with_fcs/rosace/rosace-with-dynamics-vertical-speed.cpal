@@ -1,0 +1,14 @@
+include rosace-with-dynamics.cpal
+  
+/* Vertical Speed control: 0 m/s -> 2.5 m/s and Airspeed: 230 m/s */
+processdef Vertical_Speeder(out float64: target_speed, out Flight_Mode: mode)
+{
+  state Main {
+    target_speed = 2.5;
+    mode = MANUAL;
+/*    h_c = h_eq;
+    Va_c = 230.0;*/
+  }
+}
+
+process Vertical_Speeder: scenario1[10Hz](Vz_c, flight_mode);

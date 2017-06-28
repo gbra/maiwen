@@ -1,0 +1,43 @@
+include flight-dynamics.cpal
+include rosace-controller.cpal
+
+
+struct Values
+{
+  float64: t;
+  float64: Va;
+  float64: az;
+  float64: q;
+  float64: Vz;
+  float64: h;
+  float64: delta_th_c;
+  float64: delta_e_c;
+};
+
+var queue<Values>: file_resultscpal_csv[10];
+
+processdef Observer(
+  in float64: i_Va,
+  in float64: i_az,
+  in float64: i_q,
+  in float64: i_Vz,
+  in float64: i_h,
+  in float64: i_delta_th_c,
+  in float64: i_delta_e_c,
+  out channel<Values>: output)
+{
+  state Main {
+    var Values: current;
+    current.t = float64.as(self.current_activation/1ms) / 1000.0;
+    current.Va = i_Va;
+    current.az = i_az;
+    current.q = i_q;
+    current.Vz = i_Vz;
+    current.h = i_h;
+    current.delta_th_c = i_delta_th_c;
+    current.delta_e_c = i_delta_e_c;
+    output.push(current);
+  }
+}
+
+process Observer: serializer[20ms](Va, az, q, Vz, h, delta_x_c, delta_e_c, file_resultscpal_csv);
